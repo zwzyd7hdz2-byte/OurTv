@@ -177,27 +177,65 @@ detailsView.innerHTML = `
 `;
 document.body.appendChild(detailsView);
 
-// 2. Create Fullscreen Player UI
+// 2. Create CUSTOM Netflix-Style Player UI
 const playerView = document.createElement("div");
 playerView.className = "memory-player";
 playerView.innerHTML = `
-  <button class="memory-player-close" id="close-player">×</button>
-  <div class="memory-player-media" id="player-media"></div>
+  <div class="custom-player-container">
+    <div id="media-container" style="width:100%; height:100%;">
+       <!-- Video or Image injected here -->
+    </div>
+    
+    <div class="player-ui-overlay" id="player-ui">
+      <!-- Top Bar -->
+      <div class="player-top-bar">
+        <button id="close-player">
+          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+        <h3 id="player-now-playing">Memory Title</h3>
+      </div>
+      
+      <!-- Invisible Center (Tap to Pause/Play) -->
+      <div class="player-center-click" id="player-center"></div>
+      
+      <!-- Bottom Controls -->
+      <div class="player-bottom-bar" id="player-bottom-controls">
+        <button class="player-play-btn" id="play-pause-btn">
+          <svg id="play-icon" style="display:none;" width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg id="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        </button>
+        <input type="range" class="player-progress-bar" id="seek-bar" value="0" min="0" max="100">
+        <span class="player-time" id="time-display">0:00</span>
+      </div>
+    </div>
+  </div>
 `;
 document.body.appendChild(playerView);
 
-// 3. Grab Player Elements
+// 3. Grab ALL Player Elements
 const closeDetailsBtn = document.getElementById("close-details");
 const detailsBg = document.getElementById("details-bg");
 const detailsTitle = document.getElementById("details-title");
 const detailsDesc = document.getElementById("details-desc");
 const detailsPlayBtn = document.getElementById("details-play");
 
+// Custom Player UI Elements
+const mediaContainer = document.getElementById("media-container");
 const closePlayerBtn = document.getElementById("close-player");
-const playerMedia = document.getElementById("player-media");
+const playerUI = document.getElementById("player-ui");
+const playerCenter = document.getElementById("player-center");
+const playPauseBtn = document.getElementById("play-pause-btn");
+const playIcon = document.getElementById("play-icon");
+const pauseIcon = document.getElementById("pause-icon");
+const seekBar = document.getElementById("seek-bar");
+const timeDisplay = document.getElementById("time-display");
+const playerNowPlaying = document.getElementById("player-now-playing");
+const playerBottomControls = document.getElementById("player-bottom-controls");
 
 let currentMediaURL = "";
 let currentMediaType = "";
+let activeVideo = null;
+let controlsTimeout = null;
 
 
 /* =========================================
@@ -233,31 +271,13 @@ function initializeApp() {
       heroBg.innerHTML = `<img src="${clientData.heroMemory.mediaSrc}" alt="Hero Background">`;
     }
 
-    // Hero Action: "Watch Now" (Jumps straight to fullscreen player)
+    // Hero Action: "Watch Now" (Jumps straight to custom player)
     heroPlayBtn.addEventListener("click", () => {
-      currentMediaURL = clientData.heroMemory.mediaSrc;
-      currentMediaType = clientData.heroMemory.mediaType;
-      
-      playerMedia.innerHTML = "";
-      let mediaElement;
-      
-      if (currentMediaType === "video") {
-        playerMedia.innerHTML = `<video src="${currentMediaURL}" controls autoplay></video>`;
-        mediaElement = playerMedia.querySelector("video");
-      } else {
-        playerMedia.innerHTML = `<img src="${currentMediaURL}">`;
-        mediaElement = playerView;
-      }
-      
-      playerView.classList.add("show");
-      
-      if (mediaElement) {
-        if (mediaElement.requestFullscreen) {
-          mediaElement.requestFullscreen().catch(err => console.log(err));
-        } else if (mediaElement.webkitRequestFullscreen) {
-          mediaElement.webkitRequestFullscreen();
-        }
-      }
+      launchCustomPlayer(
+        clientData.heroMemory.mediaSrc, 
+        clientData.heroMemory.mediaType, 
+        clientData.heroMemory.title
+      );
     });
 
     // Hero Action: "More Info" (Opens the Details View)
@@ -303,7 +323,7 @@ function initializeApp() {
       </div>
     `;
 
-    // Click to Open Player
+    // Click to Open Details View
     memoryCard.addEventListener("click", () => {
       openMemoryPlayer(memory.mediaSrc, memory.mediaType, memory.title, memory.description);
     });
@@ -332,7 +352,7 @@ document.addEventListener("DOMContentLoaded", initializeApp);
    PLAYER FUNCTIONS
 ------------------------- */
 
-// Function: Open Details View 
+// Function: Open Details View (The "More Info" screen)
 function openMemoryPlayer(mediaURL, mediaType, title, description) {
   currentMediaURL = mediaURL;
   currentMediaType = mediaType;
@@ -358,37 +378,107 @@ function closeDetailsView() {
 
 closeDetailsBtn.addEventListener("click", closeDetailsView);
 
-// Function: Open Fullscreen Player
-detailsPlayBtn.addEventListener("click", () => {
-  playerMedia.innerHTML = ""; 
-  let mediaElement;
 
-  if (currentMediaType === "video") {
-    playerMedia.innerHTML = `<video src="${currentMediaURL}" controls autoplay></video>`;
-    mediaElement = playerMedia.querySelector("video");
+/* --- CUSTOM PLAYER LOGIC --- */
+
+// Function: Format Seconds into M:SS
+function formatTime(timeInSeconds) {
+  const result = new Date(timeInSeconds * 1000).toISOString().substring(14, 19);
+  return result.startsWith("00:") ? result.substring(3) : result; 
+}
+
+// Function: Launch the Custom Player
+function launchCustomPlayer(mediaSrc, mediaType, title) {
+  mediaContainer.innerHTML = ""; 
+  playerNowPlaying.textContent = title;
+  
+  if (mediaType === "video") {
+    playerBottomControls.style.display = "flex"; // Show controls
+    
+    // playsinline stops the iPhone from hijacking it!
+    mediaContainer.innerHTML = `<video src="${mediaSrc}" id="active-video" autoplay playsinline></video>`;
+    activeVideo = document.getElementById("active-video");
+    
+    // Video Events
+    activeVideo.addEventListener("timeupdate", () => {
+      const value = (100 / activeVideo.duration) * activeVideo.currentTime;
+      seekBar.value = value || 0;
+      timeDisplay.textContent = formatTime(activeVideo.duration - activeVideo.currentTime);
+      
+      // Paint the slider red dynamically
+      seekBar.style.background = `linear-gradient(to right, #e50914 ${value}%, rgba(255,255,255,0.3) ${value}%)`;
+    });
+
   } else {
-    playerMedia.innerHTML = `<img src="${currentMediaURL}">`;
-    mediaElement = playerView;
+    // If it's a photo, just show the photo and hide the timeline controls
+    mediaContainer.innerHTML = `<img src="${mediaSrc}">`;
+    playerBottomControls.style.display = "none";
+    activeVideo = null;
   }
 
   playerView.classList.add("show");
+  resetControlsTimeout();
+}
 
-  if (mediaElement) {
-    if (mediaElement.requestFullscreen) {
-      mediaElement.requestFullscreen().catch(err => console.log("Fullscreen blocked:", err));
-    } else if (mediaElement.webkitRequestFullscreen) { 
-      mediaElement.webkitRequestFullscreen();
-    }
+// Wire the Details "Watch Now" button to the new player
+detailsPlayBtn.addEventListener("click", () => {
+  launchCustomPlayer(currentMediaURL, currentMediaType, detailsTitle.textContent);
+});
+
+// Function: Toggle Play/Pause
+function togglePlay() {
+  if (!activeVideo) return;
+  if (activeVideo.paused) {
+    activeVideo.play();
+    playIcon.style.display = "none";
+    pauseIcon.style.display = "block";
+  } else {
+    activeVideo.pause();
+    playIcon.style.display = "block";
+    pauseIcon.style.display = "none";
+  }
+}
+
+playPauseBtn.addEventListener("click", togglePlay);
+playerCenter.addEventListener("click", () => {
+  togglePlay();
+  resetControlsTimeout(); // Wake up UI if they tap the middle
+});
+
+// Function: Scrub the Timeline
+seekBar.addEventListener("input", () => {
+  if (activeVideo) {
+    const time = activeVideo.duration * (seekBar.value / 100);
+    activeVideo.currentTime = time;
   }
 });
 
-// Function: Close Fullscreen Player
-function closeFullscreenPlayer() {
-  const playingVideo = playerMedia.querySelector("video");
-  if (playingVideo) playingVideo.pause(); 
+// Function: Auto-Hide UI (Like Netflix)
+function resetControlsTimeout() {
+  playerUI.classList.remove("hide-controls");
+  clearTimeout(controlsTimeout);
   
+  // Hide UI after 3 seconds of no activity
+  controlsTimeout = setTimeout(() => {
+    if (activeVideo && !activeVideo.paused) {
+      playerUI.classList.add("hide-controls");
+    }
+  }, 3000);
+}
+
+// Wake up UI on mouse move or tap
+playerView.addEventListener("mousemove", resetControlsTimeout);
+playerView.addEventListener("touchstart", resetControlsTimeout);
+
+// Function: Close Custom Player
+function closeFullscreenPlayer() {
+  if (activeVideo) {
+    activeVideo.pause(); 
+    activeVideo = null;
+  }
   playerView.classList.remove("show");
-  setTimeout(() => { playerMedia.innerHTML = ""; }, 300);
+  clearTimeout(controlsTimeout);
+  setTimeout(() => { mediaContainer.innerHTML = ""; }, 300);
 }
 
 closePlayerBtn.addEventListener("click", closeFullscreenPlayer);
@@ -637,6 +727,7 @@ if (randomMemoryBtn) {
     const randomIndex = Math.floor(Math.random() * totalMemories);
     const randomMem = clientData.memories[randomIndex];
     
+    // Updated to use the new details view before playing, just like a normal click
     openMemoryPlayer(
       randomMem.mediaSrc, 
       randomMem.mediaType, 
@@ -677,22 +768,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-/* -------------------------
-   NATIVE FULLSCREEN SYNC
-------------------------- */
-// This forces our custom player to close if the user presses ESC to exit native fullscreen
-document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement) {
-    closeFullscreenPlayer();
-  }
-});
-
-// Safari Support for the same feature
-document.addEventListener("webkitfullscreenchange", () => {
-  if (!document.webkitFullscreenElement) {
-    closeFullscreenPlayer();
-  }
-});
 
 /* -------------------------
    MOBILE NAVIGATION DOCK
@@ -731,7 +806,7 @@ if (mobileSearch) {
     bottomNav.style.visibility = "hidden";
     mobileSearchBar.classList.add("show");
     
-    // 🚨 NEW: Hide the hero and main grid!
+    // Hide the hero and main grid!
     document.body.classList.add("search-active");
     
     // Show the dark search results screen
@@ -752,7 +827,7 @@ if (mobileSearchClose) {
     bottomNav.style.opacity = "1";
     bottomNav.style.visibility = "visible";
     
-    // 🚨 NEW: Bring the hero and grid back!
+    // Bring the hero and grid back!
     document.body.classList.remove("search-active");
     
     searchResultsSection.classList.remove("show"); 
