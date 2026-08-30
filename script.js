@@ -9,7 +9,7 @@ const clientData = {
   heroMemory: {
     title: "The Story of Us",
     description: "A collection of memories, laughter, chaos and moments worth watching again.",
-    mediaSrc: "assets/vid1.MOV", // Replace with your hero video
+    mediaSrc: "https://files.catbox.moe/apwnxt.MOV", // Replace with your hero video
     mediaType: "video" 
   },
 
@@ -48,7 +48,8 @@ const clientData = {
       title: "Beach Day",
       description: "Trying to surf and failing miserably.",
       mediaSrc: "assets/vid4.MOV", 
-      mediaType: "video"
+      mediaType: "video",
+      featured: true
     },
     {
       id: "mem-01",
@@ -155,6 +156,18 @@ const searchResultsTitle = document.querySelector("#search-results-title");
 const searchMessage = document.querySelector("#search-message");
 
 const memoryGrid = document.querySelector("#memory-grid");
+
+const greatestHitsGrid =
+  document.querySelector("#greatest-hits-grid");
+
+const PROFILE_DATABASE =
+  "OurTVProfileDB";
+
+const PROFILE_STORE =
+  "profile";
+
+const PROFILE_ID =
+  "main-profile";
 
 
 /* -------------------------
@@ -293,8 +306,12 @@ function initializeApp() {
 
   // --- 3. RENDER THE MEMORY CARDS ---
   if (memoryGrid) {
-    memoryGrid.innerHTML = "";
-  }
+  memoryGrid.innerHTML = "";
+}
+
+if (greatestHitsGrid) {
+  greatestHitsGrid.innerHTML = "";
+}
 
   clientData.memories.forEach(memory => {
     const memoryCard = document.createElement("div");
@@ -340,7 +357,15 @@ function initializeApp() {
       });
     }
 
-    memoryGrid.appendChild(memoryCard);
+    if (memory.featured === true && greatestHitsGrid) {
+
+  greatestHitsGrid.appendChild(memoryCard);
+
+} else if (memoryGrid) {
+
+  memoryGrid.appendChild(memoryCard);
+
+}
   });
 }
 
@@ -631,11 +656,50 @@ if (profileButton && profileMenu) {
   });
 }
 
-document.addEventListener("click", (event) => {
-  if (profileWrapper && !profileWrapper.contains(event.target)) {
-    profileMenu?.classList.remove("show");
+document.addEventListener(
+  "click",
+  (event) => {
+
+    const clickedDesktopProfile =
+      profileWrapper &&
+      profileWrapper.contains(
+        event.target
+      );
+
+
+    const clickedMobileProfile =
+      mobileProfile &&
+      mobileProfile.contains(
+        event.target
+      );
+
+
+    const clickedProfileMenu =
+      profileMenu &&
+      profileMenu.contains(
+        event.target
+      );
+
+
+    if (
+      !clickedDesktopProfile &&
+      !clickedMobileProfile &&
+      !clickedProfileMenu
+    ) {
+
+      profileMenu?.classList.remove(
+        "show"
+      );
+
+
+      profileMenu?.classList.remove(
+        "mobile-profile-open"
+      );
+
+    }
+
   }
-});
+);
 
 
 /* -------------------------
@@ -696,6 +760,178 @@ if (profilePhotoInput) {
     const imageURL = URL.createObjectURL(file);
     if (editProfileImage) editProfileImage.src = imageURL;
   });
+}
+
+/* =========================
+   PROFILE INDEXEDDB
+========================= */
+
+function openProfileDatabase() {
+
+  return new Promise((resolve, reject) => {
+
+    const request =
+      indexedDB.open(
+        PROFILE_DATABASE,
+        1
+      );
+
+
+    request.onupgradeneeded =
+      (event) => {
+
+        const database =
+          event.target.result;
+
+
+        if (
+          !database.objectStoreNames.contains(
+            PROFILE_STORE
+          )
+        ) {
+
+          database.createObjectStore(
+            PROFILE_STORE,
+            {
+              keyPath: "id"
+            }
+          );
+
+        }
+
+      };
+
+
+    request.onsuccess =
+      () => {
+
+        resolve(
+          request.result
+        );
+
+      };
+
+
+    request.onerror =
+      () => {
+
+        reject(
+          request.error
+        );
+
+      };
+
+  });
+
+}
+
+
+async function saveProfileToDatabase(
+  name,
+  photo
+) {
+
+  const database =
+    await openProfileDatabase();
+
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const transaction =
+        database.transaction(
+          PROFILE_STORE,
+          "readwrite"
+        );
+
+
+      const store =
+        transaction.objectStore(
+          PROFILE_STORE
+        );
+
+
+      const request =
+        store.put({
+          id: PROFILE_ID,
+          name: name,
+          photo: photo
+        });
+
+
+      request.onsuccess =
+        () => {
+
+          resolve();
+
+        };
+
+
+      request.onerror =
+        () => {
+
+          reject(
+            request.error
+          );
+
+        };
+
+    }
+  );
+
+}
+
+
+async function loadProfileFromDatabase() {
+
+  const database =
+    await openProfileDatabase();
+
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const transaction =
+        database.transaction(
+          PROFILE_STORE,
+          "readonly"
+        );
+
+
+      const store =
+        transaction.objectStore(
+          PROFILE_STORE
+        );
+
+
+      const request =
+        store.get(
+          PROFILE_ID
+        );
+
+
+      request.onsuccess =
+        () => {
+
+          resolve(
+            request.result || null
+          );
+
+        };
+
+
+      request.onerror =
+        () => {
+
+          reject(
+            request.error
+          );
+
+        };
+
+    }
+  );
+
 }
 
 if (saveProfileButton) {
@@ -793,107 +1029,122 @@ if (mobileHome) {
 const mobileSearchBar = document.getElementById("mobile-search-bar");
 const mobileSearchInput = document.getElementById("mobile-search-input");
 const mobileSearchClose = document.getElementById("mobile-search-close");
+const mobileSearchDropdown = document.getElementById("mobile-search-dropdown");
+const searchResultsList = document.getElementById("search-results-list");
 const bottomNav = document.querySelector(".mobile-bottom-nav");
 
-// 1. Open Mobile Search & Hide Home Screen
+// 1. Open Floating Search Drawer
 if (mobileSearch) {
   mobileSearch.addEventListener("click", (e) => {
     e.stopPropagation();
     setMobileActive(mobileSearch);
     
-    // Hide dock, show search bar
+    // Hide dock, show floating drawer
     bottomNav.style.opacity = "0";
     bottomNav.style.visibility = "hidden";
     mobileSearchBar.classList.add("show");
     
-    // Hide the hero and main grid!
-    document.body.classList.add("search-active");
-    
-    // Show the dark search results screen
-    searchResultsSection.classList.add("show");
-    searchResultsTitle.textContent = "Search Memories";
-    searchMessage.textContent = "Start typing to search your memories.";
-    searchResultsGrid.innerHTML = "";
-    
     mobileSearchInput.focus();
-    window.scrollTo(0, 0); // Instantly snap to the top of the screen
   });
 }
 
-// 2. Close Mobile Search & Bring Home Screen Back
+// 2. Close Search Drawer
 if (mobileSearchClose) {
   mobileSearchClose.addEventListener("click", () => {
     mobileSearchBar.classList.remove("show");
     bottomNav.style.opacity = "1";
     bottomNav.style.visibility = "visible";
-    
-    // Bring the hero and grid back!
-    document.body.classList.remove("search-active");
-    
-    searchResultsSection.classList.remove("show"); 
+    mobileSearchDropdown.style.display = "none";
     setMobileActive(mobileHome); 
     mobileSearchInput.value = ""; 
   });
 }
 
-// 3. The Actual Search Engine for Mobile (Bulletproof Version)
-const mobileSearchBox = document.getElementById("mobile-search-input");
-
-if (mobileSearchBox) {
-  mobileSearchBox.addEventListener("input", (e) => {
+// 3. Live Vertical Search Engine inside Drawer
+if (mobileSearchInput) {
+  mobileSearchInput.addEventListener("input", (e) => {
     const searchTerm = e.target.value.toLowerCase().trim();
-    
-    // Grab the exact result containers
-    const resultsGrid = document.getElementById("search-results-grid");
-    const resultsTitle = document.getElementById("search-results-title");
-    const resultsMessage = document.getElementById("search-message");
-    
-    // Clear previous results
-    resultsGrid.innerHTML = "";
+    searchResultsList.innerHTML = "";
 
-    // If the box is empty, reset the text
     if (searchTerm === "") {
-      resultsTitle.textContent = "Search Memories";
-      resultsMessage.textContent = "Start typing to search your memories.";
+      mobileSearchDropdown.style.display = "none";
       return;
     }
 
-    // Find all memory cards currently on the page
     const memoryCards = document.querySelectorAll("#memory-grid .memory-card");
     let matchCount = 0;
 
-    // Filter through them
     memoryCards.forEach((card) => {
-      // Look at all the text inside the card (Title + Description)
-      const searchableText = (card.textContent || "").toLowerCase();
+      const title = card.dataset.title || "";
+      const desc = card.dataset.description || "";
+      const media = card.dataset.media || "";
+      const mediaType = card.dataset.mediaType || "";
 
-      if (searchableText.includes(searchTerm)) {
+      if ((title + " " + desc).toLowerCase().includes(searchTerm)) {
         matchCount++;
         
-        // Clone the matching card for the results page
-        const resultCard = card.cloneNode(true);
+        // Create vertical row item (Movy style)
+        const row = document.createElement("div");
+        row.className = "search-result-row";
         
-        // Re-attach the click-to-play function to the cloned card
-        resultCard.addEventListener("click", () => {
-          openMemoryPlayer(
-            resultCard.dataset.media,
-            resultCard.dataset.mediaType,
-            resultCard.dataset.title,
-            resultCard.dataset.description
-          );
+        let thumbHTML = mediaType === "video" 
+          ? `<video src="${media}" muted></video>` 
+          : `<img src="${media}" alt="">`;
+
+        row.innerHTML = `
+          ${thumbHTML}
+          <div class="search-result-info">
+            <h4>${title}</h4>
+            <p>${mediaType.toUpperCase()} • ${desc.substring(0, 35)}...</p>
+          </div>
+        `;
+
+        row.addEventListener("click", () => {
+          mobileSearchBar.classList.remove("show");
+          bottomNav.style.opacity = "1";
+          bottomNav.style.visibility = "visible";
+          mobileSearchDropdown.style.display = "none";
+          openMemoryPlayer(media, mediaType, title, desc);
         });
 
-        resultsGrid.appendChild(resultCard);
+        searchResultsList.appendChild(row);
       }
     });
 
-    // Update the titles based on if we found anything
     if (matchCount > 0) {
-      resultsTitle.textContent = `Results for "${e.target.value}"`;
-      resultsMessage.textContent = `${matchCount} memory found` + (matchCount > 1 ? "s" : "");
+      mobileSearchDropdown.style.display = "block";
     } else {
-      resultsTitle.textContent = "No memories found";
-      resultsMessage.textContent = `We couldn't find anything matching "${e.target.value}".`;
+      mobileSearchDropdown.style.display = "none";
     }
   });
+}
+
+/* -------------------------
+   MOBILE PROFILE POPUP
+------------------------- */
+
+if (mobileProfile && profileMenu) {
+
+  mobileProfile.addEventListener(
+    "click",
+    (event) => {
+
+      event.stopPropagation();
+
+      setMobileActive(
+        mobileProfile
+      );
+
+
+      profileMenu.classList.toggle(
+        "show"
+      );
+
+      profileMenu.classList.toggle(
+        "mobile-profile-open"
+      );
+
+    }
+  );
+
 }
