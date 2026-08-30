@@ -357,14 +357,39 @@ if (greatestHitsGrid) {
       });
     }
 
-    if (memory.featured === true && greatestHitsGrid) {
-
-  greatestHitsGrid.appendChild(memoryCard);
-
-} else if (memoryGrid) {
-
+    // Add EVERY memory to Our Memories
+if (memoryGrid) {
   memoryGrid.appendChild(memoryCard);
+}
 
+// If featured, also add a copy to Greatest Hits
+if (memory.featured === true && greatestHitsGrid) {
+
+  const featuredCard = memoryCard.cloneNode(true);
+
+  featuredCard.addEventListener("click", () => {
+    openMemoryPlayer(
+      memory.mediaSrc,
+      memory.mediaType,
+      memory.title,
+      memory.description
+    );
+  });
+
+  if (memory.mediaType === "video") {
+    const vid = featuredCard.querySelector("video");
+
+    featuredCard.addEventListener("mouseenter", () => {
+      vid.play().catch(e => {});
+    });
+
+    featuredCard.addEventListener("mouseleave", () => {
+      vid.pause();
+      vid.currentTime = 0;
+    });
+  }
+
+  greatestHitsGrid.appendChild(featuredCard);
 }
   });
 }
