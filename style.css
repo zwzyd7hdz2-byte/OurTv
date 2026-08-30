@@ -1999,3 +1999,27 @@ body.search-active .navbar {   /* <--- Added the navbar here! */
   }
 
 }
+
+.mobile-search-icon {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 2px solid #a8a8a8;
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.mobile-search-icon::after {
+  content: "";
+  width: 7px;
+  height: 2px;
+  background: #a8a8a8;
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
