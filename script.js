@@ -359,7 +359,14 @@ if (greatestHitsGrid) {
     // Build the Card Media
     let mediaHTML = "";
     if (memory.mediaType === "video") {
-      mediaHTML = `<video src="${memory.mediaSrc}" class="memory-media" muted loop preload="metadata"></video>`;
+      mediaHTML = `<video
+  src="${memory.mediaSrc}"
+  class="memory-media"
+  muted
+  loop
+  playsinline
+  preload="metadata"
+></video>`;
     } else {
       mediaHTML = `<img src="${memory.mediaSrc}" alt="${memory.title}" class="memory-media">`;
     }
