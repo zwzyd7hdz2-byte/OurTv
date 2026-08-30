@@ -50,7 +50,7 @@ body {
 
   background: #000;
 
-  z-index: 100;
+  z-index: 99999;
 
   transition:
     opacity 1s ease,
@@ -637,6 +637,43 @@ body {
 ------------------------- */
 
 @media (max-width: 700px) {
+
+  /* Horizontal Scrolling for Both Main Wall & Search Results */
+  #greatest-hits-grid,
+#memory-grid, 
+#search-results-grid {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    
+    margin-left: -5vw;
+    margin-right: -5vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
+    padding-bottom: 20px;
+    gap: 16px;
+    
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  #greatest-hits-grid::-webkit-scrollbar,
+#memory-grid::-webkit-scrollbar,
+#search-results-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  #greatest-hits-grid .memory-card,
+#memory-grid .memory-card,
+#search-results-grid .memory-card {
+    flex: 0 0 75% !important; 
+    max-width: 280px;
+    scroll-snap-align: center;
+  }
 
   .navbar {
     top: 16px;
@@ -1452,10 +1489,84 @@ body:has(.memory-player.show) .app {
 }
 
 @media (max-width: 768px) {
+
+/* Clean Mobile Bottom Sheet Menu */
+  .profile-menu-wrapper {
+    position: static !important; 
+  }
+
+  .profile-menu {
+    position: fixed !important;
+    bottom: 85px !important; /* Sits cleanly right above the bottom dock */
+    left: 5% !important;
+    right: 5% !important;
+    width: 90% !important;
+    max-width: none !important;
+    
+    /* Animation reset using opacity only to prevent layout clipping */
+    transform: translateY(20px) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease !important;
+    z-index: 999999 !important;
+  }
+
+  .profile-menu.show {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
   /* 1. Force Hide Desktop Navbar and Profile */
-  .nav-panel, .profile-menu-wrapper {
+/* =========================
+   MOBILE DESKTOP NAV HANDLING
+========================= */
+
+@media (max-width: 768px) {
+
+  /* Keep nav-panel alive so profile popup can exist */
+  .nav-panel {
+    display: contents !important;
+  }
+
+
+  /* Hide desktop navigation buttons */
+  #home-button,
+  #memories-button,
+  .search-box {
     display: none !important;
   }
+
+
+  /* Hide only the desktop profile trigger */
+  #profile-button {
+    display: none !important;
+  }
+
+
+  /* Keep profile popup structure available */
+  .profile-menu-wrapper {
+    display: block !important;
+    position: static !important;
+  }
+
+
+  /* Mobile popup position */
+  .profile-menu {
+    position: fixed !important;
+
+    bottom: 105px !important;
+    right: 20px !important;
+
+    top: auto !important;
+    left: auto !important;
+
+    width: 260px !important;
+
+    z-index: 10000 !important;
+  }
+
+}
 
   /* 2. Clean up top header */
   .navbar {
@@ -1541,69 +1652,143 @@ body:has(.memory-player.show) .app {
   }
 }
 
-/* Mobile Search Bar Overlay */
+/* Floating Mobile Search Drawer */
   .mobile-search-bar {
     position: fixed;
-    bottom: 25px;
-    left: 50%;
-    transform: translate(-50%, 20px);
-    width: 90%;
-    max-width: 380px;
-    background: rgba(20, 20, 20, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 40px;
+    bottom: 20px;
+    left: 4%;
+    right: 4%;
+    width: 92%;
+    max-width: 500px;
+    margin: 0 auto;
+    background: rgba(22, 22, 22, 0.95);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 28px;
     display: flex;
-    align-items: center;
-    padding: 6px 6px 6px 16px;
-    z-index: 1000;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    flex-direction: column;
+    padding: 12px 14px;
+    z-index: 10000;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+    
+    /* Hidden state */
     opacity: 0;
     visibility: hidden;
+    transform: translateY(20px);
     transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
   .mobile-search-bar.show {
     opacity: 1;
     visibility: visible;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 
+  /* Filter Pills */
+  .search-filter-pills {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 8px;
+  }
+  .search-filter-pills .pill {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .search-filter-pills .pill.active {
+    background: white;
+    color: black;
+  }
+
+  /* Vertical Results Dropdown Area */
+  .mobile-search-dropdown {
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    margin-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .mobile-search-dropdown::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Individual Result Row (Netflix/Movy Style) */
+  .search-result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .search-result-row:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .search-result-row img, 
+  .search-result-row video {
+    width: 50px;
+    height: 35px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+  .search-result-info h4 {
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 2px 0;
+  }
+  .search-result-info p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    margin: 0;
+  }
+
+  /* Input Row at bottom of drawer */
+  .search-input-row {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    padding: 4px 4px 4px 12px;
+  }
   .mobile-search-bar .search-icon {
     color: rgba(255, 255, 255, 0.5);
     flex-shrink: 0;
   }
-
   .mobile-search-bar input {
     flex: 1;
     background: transparent;
     border: none;
     color: white;
-    padding: 10px 12px;
-    font-size: 16px;
+    padding: 8px 10px;
+    font-size: 15px;
     outline: none;
   }
-
   .mobile-search-bar input::placeholder {
     color: rgba(255, 255, 255, 0.4);
   }
-
   .mobile-search-bar .close-search-btn {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.12);
     border: none;
     color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.2s;
-  }
-
-  .mobile-search-bar .close-search-btn:active {
-    background: rgba(255, 255, 255, 0.15);
   }
 
 /* =========================
@@ -1621,7 +1806,6 @@ body.search-active .navbar {   /* <--- Added the navbar here! */
     min-height: 100vh;
   }
 }
-
 
 /* =========================
    CUSTOM NETFLIX-STYLE PLAYER
@@ -1744,4 +1928,74 @@ body.search-active .navbar {   /* <--- Added the navbar here! */
   color: white;
   font-size: 13px;
   font-family: monospace;
+}
+
+/* =========================
+   DESKTOP MEMORY GRID FIX
+========================= */
+
+.content {
+  padding-left: 5vw;
+  padding-right: 5vw;
+}
+
+.memory-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap: 16px;
+
+  width: 100%;
+
+  box-sizing: border-box;
+}
+
+/* Keep cards from overflowing */
+
+.memory-card {
+  min-width: 0;
+  width: 100%;
+}
+
+/* =========================
+   MOBILE PROFILE POPUP
+========================= */
+
+@media (max-width: 768px) {
+
+  .profile-menu-wrapper {
+    position: static !important;
+    display: block !important;
+  }
+
+
+  .profile-menu {
+    position: fixed !important;
+
+    bottom: 105px !important;
+    right: 20px !important;
+
+    left: auto !important;
+    top: auto !important;
+
+    width: 260px !important;
+
+    transform: translateY(15px) !important;
+
+    opacity: 0 !important;
+    visibility: hidden !important;
+
+    z-index: 10000 !important;
+  }
+
+
+  .profile-menu.show {
+    transform: translateY(0) !important;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
 }
