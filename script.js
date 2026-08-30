@@ -279,10 +279,43 @@ function initializeApp() {
 
     // Set Hero Background Media
     if (clientData.heroMemory.mediaType === "video") {
-      heroBg.innerHTML = `<video src="${clientData.heroMemory.mediaSrc}" autoplay muted loop playsinline></video>`;
+      heroBg.innerHTML = `
+  <video
+    src="${clientData.heroMemory.mediaSrc}"
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="metadata"
+  ></video>
+`;
     } else {
       heroBg.innerHTML = `<img src="${clientData.heroMemory.mediaSrc}" alt="Hero Background">`;
     }
+
+      const heroVideo =
+    heroBg.querySelector("video");
+
+  if (heroVideo) {
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (document.hidden) {
+
+          heroVideo.pause();
+
+        } else {
+
+          heroVideo.play().catch(() => {});
+
+        }
+
+      }
+    );
+
+  }
 
     // Hero Action: "Watch Now" (Jumps straight to custom player)
     heroPlayBtn.addEventListener("click", () => {
@@ -345,17 +378,35 @@ if (greatestHitsGrid) {
       openMemoryPlayer(memory.mediaSrc, memory.mediaType, memory.title, memory.description);
     });
 
-    // Netflix Hover Effect (Auto-play video preview on hover)
-    if (memory.mediaType === "video") {
-      const vid = memoryCard.querySelector("video");
-      memoryCard.addEventListener("mouseenter", () => {
-        vid.play().catch(e => {}); // Catch silent play errors
-      });
-      memoryCard.addEventListener("mouseleave", () => {
-        vid.pause();
-        vid.currentTime = 0; 
-      });
+    // Netflix Hover Effect — desktop only
+if (
+  memory.mediaType === "video" &&
+  window.matchMedia("(hover: hover)").matches
+) {
+
+  const vid =
+    memoryCard.querySelector("video");
+
+  memoryCard.addEventListener(
+    "mouseenter",
+    () => {
+
+      vid.play().catch(() => {});
+
     }
+  );
+
+  memoryCard.addEventListener(
+    "mouseleave",
+    () => {
+
+      vid.pause();
+      vid.currentTime = 0;
+
+    }
+  );
+
+}
 
     // Add EVERY memory to Our Memories
 if (memoryGrid) {
