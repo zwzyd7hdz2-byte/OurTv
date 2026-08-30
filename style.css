@@ -2023,3 +2023,7 @@ body.search-active .navbar {   /* <--- Added the navbar here! */
   transform: rotate(45deg);
   border-radius: 2px;
 }
+
+.memory-card video {
+  pointer-events: none;
+}
