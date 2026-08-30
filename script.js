@@ -16,111 +16,76 @@ const clientData = {
   // Hardcode the client's memory grid here
   memories: [
     {
-      id: "mem-01",
-      title: "Our First Trip",
-      description: "That freezing weekend up in the mountains. We had no idea what we were doing.",
-      mediaSrc: "assets/vid1.MOV", 
-      mediaType: "video" 
-    },
+  id: "mem-05",
+
+  title: "Beach Day",
+
+  description: "Trying to surf and failing miserably.",
+
+  mediaSrc: "assets/vid4.MOV",
+
+  thumbnail: "assets/vid4-thumb.jpeg",
+
+  mediaType: "video",
+},
     {
-      id: "mem-02",
-      title: "Pizza Night",
-      description: "Attempting to make dough from scratch. A complete disaster but so fun.",
-      mediaSrc: "assets/photo1.jpeg", 
-      mediaType: "image"
-    },
+  id: "mem-05",
+
+  title: "Beach Day",
+
+  description: "Trying to surf and failing miserably.",
+
+  mediaSrc: "assets/vid4.MOV",
+
+  thumbnail: "assets/vid4-thumb.jpeg",
+
+  mediaType: "video",
+},
     {
-      id: "mem-03",
-      title: "Summer Concert",
-      description: "Front row at the festival. Best night ever.",
-      mediaSrc: "assets/vid2.MOV", 
-      mediaType: "video"
-    },
+  id: "mem-05",
+
+  title: "Beach Day",
+
+  description: "Trying to surf and failing miserably.",
+
+  mediaSrc: "assets/vid4.MOV",
+
+  thumbnail: "assets/vid4-thumb.jpeg",
+
+  mediaType: "video",
+
+  featured: true
+},
     {
-      id: "mem-04",
-      title: "City Lights",
-      description: "Walking around downtown after midnight.",
-      mediaSrc: "assets/vid3.MOV", 
-      mediaType: "video"
-    },
+  id: "mem-05",
+
+  title: "Beach Day",
+
+  description: "Trying to surf and failing miserably.",
+
+  mediaSrc: "assets/vid4.MOV",
+
+  thumbnail: "assets/vid4-thumb.jpeg",
+
+  mediaType: "video",
+
+  featured: true
+},
     {
-      id: "mem-05",
-      title: "Beach Day",
-      description: "Trying to surf and failing miserably.",
-      mediaSrc: "assets/vid4.MOV", 
-      mediaType: "video",
-      featured: true
-    },
-    {
-      id: "mem-01",
-      title: "Our First Trip",
-      description: "That freezing weekend up in the mountains. We had no idea what we were doing.",
-      mediaSrc: "assets/vid1.MOV", 
-      mediaType: "video" 
-    },
-    {
-      id: "mem-02",
-      title: "Pizza Night",
-      description: "Attempting to make dough from scratch. A complete disaster but so fun.",
-      mediaSrc: "assets/photo1.jpeg", 
-      mediaType: "image"
-    },
-    {
-      id: "mem-03",
-      title: "Summer Concert",
-      description: "Front row at the festival. Best night ever.",
-      mediaSrc: "assets/vid2.MOV", 
-      mediaType: "video"
-    },
-    {
-      id: "mem-04",
-      title: "City Lights",
-      description: "Walking around downtown after midnight.",
-      mediaSrc: "assets/vid3.MOV", 
-      mediaType: "video"
-    },
-    {
-      id: "mem-05",
-      title: "Beach Day",
-      description: "Trying to surf and failing miserably.",
-      mediaSrc: "assets/vid4.MOV", 
-      mediaType: "video"
-    },
-    {
-      id: "mem-01",
-      title: "Our First Trip",
-      description: "That freezing weekend up in the mountains. We had no idea what we were doing.",
-      mediaSrc: "assets/vid1.MOV", 
-      mediaType: "video" 
-    },
-    {
-      id: "mem-02",
-      title: "Pizza Night",
-      description: "Attempting to make dough from scratch. A complete disaster but so fun.",
-      mediaSrc: "assets/photo1.jpeg", 
-      mediaType: "image"
-    },
-    {
-      id: "mem-03",
-      title: "Summer Concert",
-      description: "Front row at the festival. Best night ever.",
-      mediaSrc: "assets/vid2.MOV", 
-      mediaType: "video"
-    },
-    {
-      id: "mem-04",
-      title: "City Lights",
-      description: "Walking around downtown after midnight.",
-      mediaSrc: "assets/vid3.MOV", 
-      mediaType: "video"
-    },
-    {
-      id: "mem-05",
-      title: "Beach Day",
-      description: "Trying to surf and failing miserably.",
-      mediaSrc: "assets/vid4.MOV", 
-      mediaType: "video"
-    }
+  id: "mem-05",
+
+  title: "Beach Day",
+
+  description: "Trying to surf and failing miserably.",
+
+  mediaSrc: "assets/vid4.MOV",
+
+  thumbnail: "assets/vid4-thumb.jpeg",
+
+  mediaType: "video",
+
+  featured: true
+}
   ]
 };
 
@@ -278,20 +243,30 @@ function initializeApp() {
     heroDesc.textContent = clientData.heroMemory.description;
 
     // Set Hero Background Media
-    if (clientData.heroMemory.mediaType === "video") {
-      heroBg.innerHTML = `
-  <video
-    src="${clientData.heroMemory.mediaSrc}"
-    autoplay
-    muted
-    loop
-    playsinline
-    preload="metadata"
-  ></video>
-`;
-    } else {
-      heroBg.innerHTML = `<img src="${clientData.heroMemory.mediaSrc}" alt="Hero Background">`;
-    }
+    const isMobile = window.innerWidth <= 768;
+
+if (clientData.heroMemory.mediaType === "video" && !isMobile) {
+
+  heroBg.innerHTML = `
+    <video
+      src="${clientData.heroMemory.mediaSrc}"
+      autoplay
+      muted
+      loop
+      playsinline
+    ></video>
+  `;
+
+} else {
+
+  heroBg.innerHTML = `
+    <img
+      src="${clientData.heroMemory.thumbnail || clientData.heroMemory.mediaSrc}"
+      alt="Hero Background"
+    >
+  `;
+
+}
 
       const heroVideo =
     heroBg.querySelector("video");
@@ -357,19 +332,46 @@ if (greatestHitsGrid) {
     memoryCard.dataset.mediaType = memory.mediaType;
 
     // Build the Card Media
-    let mediaHTML = "";
-    if (memory.mediaType === "video") {
-      mediaHTML = `<video
-  src="${memory.mediaSrc}"
-  class="memory-media"
-  muted
-  loop
-  playsinline
-  preload="metadata"
-></video>`;
-    } else {
-      mediaHTML = `<img src="${memory.mediaSrc}" alt="${memory.title}" class="memory-media">`;
-    }
+let mediaHTML = "";
+
+// Check whether this device supports hover
+const isDesktop =
+  window.matchMedia("(hover: hover)").matches;
+
+if (
+  memory.mediaType === "video" &&
+  isDesktop
+) {
+
+  // Desktop → real video preview
+  mediaHTML = `<video
+    src="${memory.mediaSrc}"
+    class="memory-media"
+    muted
+    loop
+    playsinline
+    preload="metadata"
+  ></video>`;
+
+} else if (memory.mediaType === "video") {
+
+  // Mobile → thumbnail only
+  mediaHTML = `<img
+    src="${memory.thumbnail}"
+    alt="${memory.title}"
+    class="memory-media"
+  >`;
+
+} else {
+
+  // Normal image memory
+  mediaHTML = `<img
+    src="${memory.mediaSrc}"
+    alt="${memory.title}"
+    class="memory-media"
+  >`;
+
+}
 
     // Build the Card Content Overlay
     memoryCard.innerHTML = `
