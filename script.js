@@ -10,6 +10,7 @@ const clientData = {
     title: "The Story of Us",
     description: "A collection of memories, laughter, chaos and moments worth watching again.",
     mediaSrc: "https://files.catbox.moe/apwnxt.MOV", // Replace with your hero video
+    thumbnail: "assets/vid4-thumb.jpeg",
     mediaType: "video" 
   },
 
